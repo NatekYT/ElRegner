@@ -21,3 +21,5 @@ legge til en reset funsjon
 begregning fra overspenningsvern
 
 Legge til versjonsnummer.
+
+legge til 3leder
