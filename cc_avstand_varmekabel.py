@@ -6,14 +6,18 @@ def start_cc_avstand_varmekabel(parent_frame):
     ttk.Label(parent_frame, text="CC-avstand Beregning for Varmekabel").pack(pady=10)
 
     # Input felt for rom areal
-    ttk.Label(parent_frame, text="Rom areal (m²):").pack(pady=5)
-    rom_areal_inn = tk.Entry(parent_frame)
-    rom_areal_inn.pack(pady=5)
+    rom_areal_frame = tk.Frame(parent_frame)
+    rom_areal_frame.pack(pady=5)
+    ttk.Label(rom_areal_frame, text="Rom areal (m²):").grid(row=0, column=0, padx=5)
+    rom_areal_inn = tk.Entry(rom_areal_frame)
+    rom_areal_inn.grid(row=0, column=1, padx=5)
 
     # Input felt for kabel lengde
-    ttk.Label(parent_frame, text="Kabelens lengde (m):").pack(pady=5)
-    kabel_lengde_inn = tk.Entry(parent_frame)
-    kabel_lengde_inn.pack(pady=5)
+    kabel_lengde_frame = tk.Frame(parent_frame)
+    kabel_lengde_frame.pack(pady=5)
+    ttk.Label(kabel_lengde_frame, text="Kabelens lengde (m):").grid(row=1, column=0, padx=5)
+    kabel_lengde_inn = tk.Entry(kabel_lengde_frame)
+    kabel_lengde_inn.grid(row=1, column=1, padx=5)
 
     # Resultatfelt
     resultat = tk.StringVar()
