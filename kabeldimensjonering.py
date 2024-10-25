@@ -3,9 +3,6 @@ from tkinter import ttk
 
 # Funksjon for kabeldimensjonering (vises inne i en ramme)
 def start_kabeldimensjonering(parent_frame):
-    ttk.Label(parent_frame, text="Kabeldimensjonering").pack(pady=10)
-    # Her legger du til resten av kabeldimensjoneringen.
-
     # Tabell fra NEK 400 for strømkapasitet (forenklet) basert på forlegningsmetode og tverrsnitt
     strømkapasitet_tabell = {
         "Kobber": {
@@ -76,9 +73,6 @@ def start_kabeldimensjonering(parent_frame):
                 resultat.set("Ingen passende kabel funnet.")
                 return
 
-            # Bruker angitt karakteristikk for vern
-            karakteristikk = karakteristikk_vern.get()
-
             # Merkestrøm til vernet
             merkestrøm_vernet = strøm * 1.25  # Eksempel på å sette merkestrøm til vern med faktor 1.25
 
@@ -102,71 +96,61 @@ def start_kabeldimensjonering(parent_frame):
 
             resultat.set(f"Riktig kabeltverrsnitt: {riktig_tverrsnitt} mm²\n"
                          f"Merkestrøm til vern: {merkestrøm_vernet:.1f} A\n"
-                         f"Karakteristikk for vern: {karakteristikk}\n"
                          f"Spenningsfall: {spenningsfall:.2f} V\n"
                          f"Spenningsfall (%): {spenningsfall_prosent:.2f}%")
         except ValueError:
             resultat.set("Skriv inn gyldige verdier.")
 
     # GUI-oppsett
-    root = tk.Tk()
-    root.title("Kabel- og Vernedimensjonering")
+    ttk.Label(parent_frame, text="Kabeldimensjonering").grid(row=0, column=0, columnspan=2, pady=10)
 
     # Input felt for strøm
-    ttk.Label(root, text="Strøm (A):").grid(column=0, row=0, padx=10, pady=5)
-    strøm_inn = tk.Entry(root)
-    strøm_inn.grid(column=1, row=0, padx=10, pady=5)
+    ttk.Label(parent_frame, text="Strøm (A):").grid(row=1, column=0, padx=5, pady=5, sticky=tk.E)
+    strøm_inn = tk.Entry(parent_frame)
+    strøm_inn.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
 
     # Input felt for lengde
-    ttk.Label(root, text="Lengde (m):").grid(column=0, row=1, padx=10, pady=5)
-    lengde_inn = tk.Entry(root)
-    lengde_inn.grid(column=1, row=1, padx=10, pady=5)
+    ttk.Label(parent_frame, text="Lengde (m):").grid(row=2, column=0, padx=5, pady=5, sticky=tk.E)
+    lengde_inn = tk.Entry(parent_frame)
+    lengde_inn.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
 
     # Input felt for startspenning
-    ttk.Label(root, text="Startspenning (V):").grid(column=0, row=2, padx=10, pady=5)
-    spenning_inn = tk.Entry(root)
-    spenning_inn.grid(column=1, row=2, padx=10, pady=5)
+    ttk.Label(parent_frame, text="Startspenning (V):").grid(row=3, column=0, padx=5, pady=5, sticky=tk.E)
+    spenning_inn = tk.Entry(parent_frame)
+    spenning_inn.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
 
-    # Input felt for maksimalt spenningsfall
-    ttk.Label(root, text="Maksimalt Spenningsfall (%):").grid(column=0, row=3, padx=10, pady=5)
-    spenningsfall_inn = tk.Entry(root)
-    spenningsfall_inn.grid(column=1, row=3, padx=10, pady=5)
+    # Input felt for maksimal spenningsfall
+    ttk.Label(parent_frame, text="Maks spenningsfall (%):").grid(row=4, column=0, padx=5, pady=5, sticky=tk.E)
+    spenningsfall_inn = tk.Entry(parent_frame)
+    spenningsfall_inn.grid(row=4, column=1, padx=5, pady=5, sticky=tk.W)
 
     # Input felt for temperatur
-    ttk.Label(root, text="Omgivelsestemperatur (°C):").grid(column=0, row=4, padx=10, pady=5)
-    temp_inn = tk.Entry(root)
-    temp_inn.grid(column=1, row=4, padx=10, pady=5)
+    ttk.Label(parent_frame, text="Temperatur (°C):").grid(row=5, column=0, padx=5, pady=5, sticky=tk.E)
+    temp_inn = tk.Entry(parent_frame)
+    temp_inn.grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
 
-    # Input felt for nærføring
-    ttk.Label(root, text="Antall kabler i nærføring:").grid(column=0, row=5, padx=10, pady=5)
-    nærføring_inn = tk.Entry(root)
-    nærføring_inn.grid(column=1, row=5, padx=10, pady=5)
+    # Input felt for antall kabler i nærføring
+    ttk.Label(parent_frame, text="Antall kabler i nærføring:").grid(row=6, column=0, padx=5, pady=5, sticky=tk.E)
+    nærføring_inn = tk.Entry(parent_frame)
+    nærføring_inn.grid(row=6, column=1, padx=5, pady=5, sticky=tk.W)
 
-    # Valg for forlegningsmetode
-    ttk.Label(root, text="Forlegningsmetode:").grid(column=0, row=6, padx=10, pady=5)
-    forlegning_metode = ttk.Combobox(root, values=["A1", "A2", "B1", "B2", "C", "D1", "D2"])
-    forlegning_metode.grid(column=1, row=6, padx=10, pady=5)
-    forlegning_metode.current(0)
+    # Forlegningsmetode valg
+    ttk.Label(parent_frame, text="Forlegningsmetode:").grid(row=7, column=0, padx=5, pady=5, sticky=tk.E)
+    forlegning_metode = tk.StringVar(value="A1")
+    forlegningsvalg = ttk.Combobox(parent_frame, textvariable=forlegning_metode)
+    forlegningsvalg['values'] = ["A1", "A2", "B1", "B2", "C", "D1", "D2"]
+    forlegningsvalg.grid(row=7, column=1, padx=5, pady=5, sticky=tk.W)
 
-    # Valg for kabelmateriale (kobber eller aluminium)
-    ttk.Label(root, text="Kabelmateriale:").grid(column=0, row=7, padx=10, pady=5)
-    kabel_type = ttk.Combobox(root, values=["Kobber", "Aluminium"])
-    kabel_type.grid(column=1, row=7, padx=10, pady=5)
-    kabel_type.current(0)
+    # Kabeltype valg
+    ttk.Label(parent_frame, text="Kabeltype:").grid(row=8, column=0, padx=5, pady=5, sticky=tk.E)
+    kabel_type = tk.StringVar(value="Kobber")
+    kabelvalg = ttk.Combobox(parent_frame, textvariable=kabel_type)
+    kabelvalg['values'] = ["Kobber", "Aluminium"]
+    kabelvalg.grid(row=8, column=1, padx=5, pady=5, sticky=tk.W)
 
-    # Valg for karakteristikk til vern (B, C, D)
-    ttk.Label(root, text="Karakteristikk for vern:").grid(column=0, row=8, padx=10, pady=5)
-    karakteristikk_vern = ttk.Combobox(root, values=["B", "C", "D"])
-    karakteristikk_vern.grid(column=1, row=8, padx=10, pady=5)
-    karakteristikk_vern.current(0)
+    # Knapp for å utføre beregning
+    ttk.Button(parent_frame, text="Beregn kabeldimensjon", command=dimensjoner_kabel).grid(row=9, column=0, columnspan=2, pady=10)
 
-    # Resultatfelt
+    # Vis resultatet
     resultat = tk.StringVar()
-    ttk.Label(root, textvariable=resultat).grid(column=0, row=10, columnspan=2, padx=10, pady=5)
-
-    # Knapp for å beregne
-    beregn_knapp = ttk.Button(root, text="Beregn", command=dimensjoner_kabel)
-    beregn_knapp.grid(column=0, row=9, columnspan=2, padx=10, pady=10)
-
-    root.mainloop()
-    
+    ttk.Label(parent_frame, textvariable=resultat, wraplength=300).grid(row=10, column=0, columnspan=2, pady=10)
