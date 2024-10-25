@@ -7,7 +7,7 @@ from cc_avstand_varmekabel import start_cc_avstand_varmekabel
 def main_window():
     root = tk.Tk()
     root.title("Elektro Beregningsprogram")
-    root.geometry("400x300")
+    root.geometry("400x500")
 
     # Funksjon for å bytte mellom funksjoner
     def vis_kabeldimensjonering():
