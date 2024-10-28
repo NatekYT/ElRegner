@@ -2,6 +2,44 @@ import tkinter as tk
 from tkinter import ttk
 from kabeldimensjonering import start_kabeldimensjonering
 from cc_avstand_varmekabel import start_cc_avstand_varmekabel
+import socket
+import requests
+import sys
+
+
+PC_name = socket.gethostname()
+print(PC_name)
+
+license_keys = requests.get("https://raw.githubusercontent.com/NatekYT/ElRegner/refs/heads/main/LC").text
+print(license_keys)
+
+if PC_name in license_keys:
+    print("True")
+else:
+    print("False")
+    
+    # Oppretter hovedvinduet
+    root = tk.Tk()
+    root.title("Elregner lisens ikke aktivert")
+    root.geometry("400x200")  # Setter størrelse på vinduet
+
+    # Legger til en etikett med teksten "Test"
+    label = tk.Label(root, text=f"Lisens ikke aktivert. Send melding til natsed13@outlook.com eller kontakt Natan for å kjøpe lisens.                                                 Oppgi denne koden til Natan for å aktivere lisens. Kode: {PC_name}", wraplength=350)
+    label.pack(pady=20)
+
+    # Definerer funksjonen som avslutter programmet
+    def avslutt():
+        root.destroy()
+
+    # Legger til en knapp med teksten "OK" som kaller avslutt-funksjonen
+    ok_button = tk.Button(root, text="OK", command=avslutt)
+    ok_button.pack()
+
+    # Starter hovedløkken til Tkinter
+    root.mainloop()
+    sys.exit()      # Stopper programmet helt
+
+
 
 # Hovedvindu oppsett
 def main_window():
