@@ -1,4 +1,4 @@
-"LAPTOP-BR0IFDJ4" "Natan S"
-"LAPTOP-ZmienTO" "Isak N"
-"LAPTOP-3SKVM8LJ" "Peder E H"
-"skibedyeskil" "Eskil V" 
+List1 = ["LAPTOP-BR0IFDJ4", "Natan S"]
+List2 = ["LAPTOP-ZmienTO", "Isak N"]
+List3 = ["LAPTOP-3SKVM8LJ", "Peder E H"]
+List4 = ["skibedyeskil", "Eskil V"]
