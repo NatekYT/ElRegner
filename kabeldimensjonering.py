@@ -43,7 +43,6 @@ def start_kabeldimensjonering(parent_frame):
             return 0.7
         else:
             return 0.5
-
     # Funksjon for å dimensjonere kabel, vern og beregne spenningsfall
     def dimensjoner_kabel():
         try:
@@ -55,6 +54,8 @@ def start_kabeldimensjonering(parent_frame):
             max_spenningsfall = float(spenningsfall_inn.get())
             forlegning = forlegning_metode.get()
             tverrsnitt_liste = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240]
+            fasevalg = fase_valg.get()  # Hent valg for 2 eller 3 faser
+
 
             # Valg av materiale
             materiale = kabel_type.get()
@@ -65,92 +66,150 @@ def start_kabeldimensjonering(parent_frame):
             # Velger tabell for materialet og forlegningsmetode
             strømkapasitet = strømkapasitet_tabell[materiale][forlegning]
 
+            # Temperaturkorreksjonstabell
+            temperatur_korreksjon = {
+                "PVC": [1.22, 1.17, 1.12, 1.06, 1.00, 0.94, 0.87, 0.79, 0.71, 0.61, 0.50],
+                "PEX/EPR": [1.15, 1.12, 1.08, 1.04, 1.00, 0.96, 0.91, 0.87, 0.82, 0.76, 0.71, 0.65, 0.58, 0.50, 0.41]
+            }
+
+            # Velg temperaturkorreksjonstabell etter isolasjonstype
+            isolasjonstype = "PVC" if materiale == "Kobber" else "PEX/EPR"
+            temperatur_korreksjon_verdi = temperatur_korreksjon[isolasjonstype][temperatur // 7]
+
+           
+                
+
             # Finn riktig tverrsnitt basert på korrigert strømkapasitet
             riktig_tverrsnitt = next((tverrsnitt for tverrsnitt, kapasitet in zip(tverrsnitt_liste, strømkapasitet)
-                                      if kapasitet * korr_nærføring >= strøm), None)
+                                     if kapasitet * korr_nærføring * temperatur_korreksjon_verdi >= strøm), None)
 
             if riktig_tverrsnitt is None:
-                resultat.set("Ingen passende kabel funnet.")
+                hoved_resultat.configure(state="normal")
+                hoved_resultat.delete(1.0, tk.END)
+                hoved_resultat.insert(tk.END, "Ingen passende kabel funnet.")
+                hoved_resultat.configure(state="disabled")
                 return
 
             # Merkestrøm til vernet
             merkestrøm_vernet = strøm * 1.25  # Eksempel på å sette merkestrøm til vern med faktor 1.25
 
-            # Iterasjon for spenningsfall basert på maksimalt tillatt spenningsfall
-            while True:
-                ρ = resistans[materiale]
-                spenningsfall = (strøm * lengde * ρ) / riktig_tverrsnitt
-                spenningsfall_prosent = (spenningsfall / start_spenning) * 100
+            # Beregner RL og spenningsfall
+            ρ = resistans[materiale]
+            fasefaktor = 2 if fasevalg == "2" else 3**0.5
+            RL = (ρ * lengde * fasefaktor) / riktig_tverrsnitt
+            spenningsfall = RL * strøm
+            spenningsfall_prosent = (spenningsfall / start_spenning) * 100
+            u_stikk = start_spenning - spenningsfall
 
-                # Sjekk om spenningsfallet er under eller likt maksimalt tillatt spenningsfall
-                if spenningsfall_prosent <= max_spenningsfall:
-                    break
+            # Kort resultat
+            hoved_resultat.configure(state="normal")
+            hoved_resultat.delete(1.0, tk.END)
+            
+            # Skjekk at isolasjonen tåler temperatur
+            if (isolasjonstype == "PVC" and temperatur > 70 ) or (isolasjonstype == "PEX/EPR" and temperatur > 80):
+                hoved_resultat.insert(tk.END,
+                                      "For høy temperatur. Velg lavere temperatur"
+                                      ) 
+            else:
+                hoved_resultat.insert(tk.END,
+                                   f"Kabeltverrsnitt: {riktig_tverrsnitt}mm²\n"
+                                   f"Vernstørrelse: {merkestrøm_vernet:.1f}A\n"
+                                   f"Spenningsfall: {spenningsfall:.1f}V ({spenningsfall_prosent:.1f}%)\n"
+                                  f"Isolasjonstype: {isolasjonstype}"
+                                   )
+                hoved_resultat.configure(state="disabled")
 
-                # Hvis spenningsfallet er over tillatt grense, øk tverrsnittet til neste tilgjengelige verdi
-                next_index = tverrsnitt_liste.index(riktig_tverrsnitt) + 1
-                if next_index < len(tverrsnitt_liste):
-                    riktig_tverrsnitt = tverrsnitt_liste[next_index]
-                else:
-                    resultat.set(f"Ingen passende kabel funnet som gir spenningsfall under {max_spenningsfall}%.")
-                    return
+            # Detaljert utregning for "Mer info"
+            detaljert_resultat.configure(state="normal")
+            detaljert_resultat.delete(1.0, tk.END)
+            detaljert_resultat.insert(tk.END,
+                                     f"Krav 1: IB < IN < IZ\n"
+                                     f"IB = {strøm}A\n"
+                                     f"IN = {merkestrøm_vernet:.1f}A\n"
+                                     f"\nForlegningsmetode {forlegning}\n"
+                                     f"Iz min = IN / (KT * KN) => {merkestrøm_vernet:.1f}A / ({temperatur_korreksjon_verdi} * {korr_nærføring}) = {merkestrøm_vernet / (temperatur_korreksjon_verdi * korr_nærføring):.1f}A\n"
+                                     f"\nIz korr = Iz avlest * KN * KT => {strømkapasitet[tverrsnitt_liste.index(riktig_tverrsnitt)]}A * {temperatur_korreksjon_verdi} * {korr_nærføring} = {strømkapasitet[tverrsnitt_liste.index(riktig_tverrsnitt)] * 0.75 * korr_nærføring:.1f}A\n"
+                                     f"\nVern = {merkestrøm_vernet:.1f}A, kabel = {riktig_tverrsnitt}mm²\n"
+                                     f"Krav 2: Spenningsfall ΔU% <= maxspenningsfall:\n"
+                                     f"ρ * lengde * √3 / A => {ρ}Ω * {lengde}m * √3 / {riktig_tverrsnitt}mm² = {spenningsfall:.1f}V\n"
+                                     f"ΔU% = {spenningsfall_prosent:.1f}% \n"
+                                     f"Spenningsfall til stikk: {u_stikk:.1f}V"
+                                     )
+            detaljert_resultat.configure(state="disabled")
 
-            resultat.set(f"Riktig kabeltverrsnitt: {riktig_tverrsnitt} mm²\n"
-                         f"Merkestrøm til vern: {merkestrøm_vernet:.1f} A\n"
-                         f"Spenningsfall: {spenningsfall:.2f} V\n"
-                         f"Spenningsfall (%): {spenningsfall_prosent:.2f}%")
         except ValueError:
-            resultat.set("Skriv inn gyldige verdier.")
+            hoved_resultat.configure(state="normal")
+            hoved_resultat.delete(1.0, tk.END)
+            hoved_resultat.insert(tk.END, "Vennligst fyll inn alle feltene riktig.")
+            hoved_resultat.configure(state="disabled")
+    # Funksjon for å vise detaljert resultat når "Mer info" trykkes
+    def vis_detaljert_info():
+        detaljert_resultat.grid(row=13, column=0, columnspan=2, pady=10)
+        detaljert_resultat.configure(state="disabled")
 
-    # GUI-oppsett
-    ttk.Label(parent_frame, text="Kabeldimensjonering").grid(row=0, column=0, columnspan=2, pady=10)
+    # Kopier-funksjon for detaljert resultat
+    def kopier_detaljert_info():
+        parent_frame.clipboard_clear()
+        parent_frame.clipboard_append(detaljert_resultat.get("1.0", tk.END))
 
-    # Input felt for strøm
-    ttk.Label(parent_frame, text="Strøm (A):").grid(row=1, column=0, padx=5, pady=5, sticky=tk.E)
-    strøm_inn = tk.Entry(parent_frame)
-    strøm_inn.grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+    # Inndata for dimensjoneringskriterier
+    ttk.Label(parent_frame, text="Strøm (A):").grid(row=1, column=0, sticky="w")
+    strøm_inn = ttk.Entry(parent_frame)
+    strøm_inn.grid(row=1, column=1, padx=10)
 
-    # Input felt for lengde
-    ttk.Label(parent_frame, text="Lengde (m):").grid(row=2, column=0, padx=5, pady=5, sticky=tk.E)
-    lengde_inn = tk.Entry(parent_frame)
-    lengde_inn.grid(row=2, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(parent_frame, text="Lengde (m):").grid(row=2, column=0, sticky="w")
+    lengde_inn = ttk.Entry(parent_frame)
+    lengde_inn.grid(row=2, column=1, padx=10)
 
-    # Input felt for startspenning
-    ttk.Label(parent_frame, text="Startspenning (V):").grid(row=3, column=0, padx=5, pady=5, sticky=tk.E)
-    spenning_inn = tk.Entry(parent_frame)
-    spenning_inn.grid(row=3, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(parent_frame, text="Spenning (V):").grid(row=3, column=0, sticky="w")
+    spenning_inn = ttk.Entry(parent_frame)
+    spenning_inn.grid(row=3, column=1, padx=10)
 
-    # Input felt for maksimal spenningsfall
-    ttk.Label(parent_frame, text="Maks spenningsfall (%):").grid(row=4, column=0, padx=5, pady=5, sticky=tk.E)
-    spenningsfall_inn = tk.Entry(parent_frame)
-    spenningsfall_inn.grid(row=4, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(parent_frame, text="Temperatur (°C):").grid(row=4, column=0, sticky="w")
+    temp_inn = ttk.Entry(parent_frame)
+    temp_inn.grid(row=4, column=1, padx=10)
 
-    # Input felt for temperatur
-    ttk.Label(parent_frame, text="Temperatur (°C):").grid(row=5, column=0, padx=5, pady=5, sticky=tk.E)
-    temp_inn = tk.Entry(parent_frame)
-    temp_inn.grid(row=5, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(parent_frame, text="Antall kabler for nærføring:").grid(row=5, column=0, sticky="w")
+    nærføring_inn = ttk.Entry(parent_frame)
+    nærføring_inn.grid(row=5, column=1, padx=10)
 
-    # Input felt for antall kabler i nærføring
-    ttk.Label(parent_frame, text="Antall kabler i nærføring:").grid(row=6, column=0, padx=5, pady=5, sticky=tk.E)
-    nærføring_inn = tk.Entry(parent_frame)
-    nærføring_inn.grid(row=6, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(parent_frame, text="Max spenningsfall (%):").grid(row=6, column=0, sticky="w")
+    spenningsfall_inn = ttk.Entry(parent_frame)
+    spenningsfall_inn.grid(row=6, column=1, padx=10)
 
-    # Forlegningsmetode valg
-    ttk.Label(parent_frame, text="Forlegningsmetode:").grid(row=7, column=0, padx=5, pady=5, sticky=tk.E)
-    forlegning_metode = tk.StringVar(value="A1")
-    forlegningsvalg = ttk.Combobox(parent_frame, textvariable=forlegning_metode)
-    forlegningsvalg['values'] = ["A1", "A2", "B1", "B2", "C", "D1", "D2"]
-    forlegningsvalg.grid(row=7, column=1, padx=5, pady=5, sticky=tk.W)
+    # Materiale og forlegning metode valg
+    ttk.Label(parent_frame, text="Kabeltype:").grid(row=7, column=0, sticky="w")
+    kabel_type = ttk.Combobox(parent_frame, values=["Kobber", "Aluminium"])
+    kabel_type.grid(row=7, column=1, padx=10)
+    kabel_type.current(0)
 
-    # Kabeltype valg
-    ttk.Label(parent_frame, text="Kabeltype:").grid(row=8, column=0, padx=5, pady=5, sticky=tk.E)
-    kabel_type = tk.StringVar(value="Kobber")
-    kabelvalg = ttk.Combobox(parent_frame, textvariable=kabel_type)
-    kabelvalg['values'] = ["Kobber", "Aluminium"]
-    kabelvalg.grid(row=8, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(parent_frame, text="Forlegningsmetode:").grid(row=8, column=0, sticky="w")
+    forlegning_metode = ttk.Combobox(parent_frame, values=["A1", "A2", "B1", "B2", "C", "D1", "D2"])
+    forlegning_metode.grid(row=8, column=1, padx=10)
+    forlegning_metode.current(0)
 
-    # Knapp for å utføre beregning
-    ttk.Button(parent_frame, text="Beregn kabeldimensjon", command=dimensjoner_kabel).grid(row=9, column=0, columnspan=2, pady=10)
+    # Fasevalg: 2 eller 3-fase
+    ttk.Label(parent_frame, text="Velg fase (2/3-tråds kabel):").grid(row=9, column=0, sticky="w")
+    fase_valg = ttk.Combobox(parent_frame, values=["2", "3"])
+    fase_valg.grid(row=9, column=1, padx=10)
+    fase_valg.current(0)
 
-    # Vis resultatet
-    resultat = tk.StringVar()
-    ttk.Label(parent_frame, textvariable=resultat, wraplength=300).grid(row=10, column=0, columnspan=2, pady=10)
+    # Resultatvisning i en read-only tekst widget
+    hoved_resultat = tk.Text(parent_frame, wrap="word", height=5, width=50)
+    hoved_resultat.grid(row=11, column=0, columnspan=2, pady=10)
+    hoved_resultat.configure(state="disabled")
+
+    # Detaljert resultatvisning (for "Mer info") i en større read-only tekst widget
+    detaljert_resultat = tk.Text(parent_frame, wrap="word", height=15, width=70)  # Justert størrelse
+
+    # Knapp for å vise detaljert info
+    mer_info_knapp = ttk.Button(parent_frame, text="Mer info", command=vis_detaljert_info)
+    mer_info_knapp.grid(row=12, column=0, pady=5)
+
+    # Knapp for å kopiere detaljert info
+    kopier_knapp = ttk.Button(parent_frame, text="Kopier", command=kopier_detaljert_info)
+    kopier_knapp.grid(row=12, column=1, pady=5)
+
+    # Beregn-knapp
+    beregn_knapp = ttk.Button(parent_frame, text="Beregn", command=dimensjoner_kabel)
+    beregn_knapp.grid(row=10, column=0, columnspan=2, pady=10)
