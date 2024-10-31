@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from kabeldimensjonering import start_kabeldimensjonering
 from cc_avstand_varmekabel import start_cc_avstand_varmekabel
+from resistans import start_resistans
+from ohmslov import start_ohmslov
 import socket
 import requests
 import sys
@@ -45,7 +47,7 @@ else:
 def main_window():
     root = tk.Tk()
     root.title("Elektro Beregningsprogram")
-    root.geometry("400x500")
+    root.geometry("600x800")
 
     # Funksjon for å bytte mellom funksjoner
     def vis_kabeldimensjonering():
@@ -55,6 +57,14 @@ def main_window():
     def vis_cc_avstand():
         clear_frame()
         start_cc_avstand_varmekabel(frame)
+    
+    def vis_resistans():
+        clear_frame()
+        start_resistans(frame)
+
+    def vis_ohmslov():
+        clear_frame()
+        start_ohmslov(frame)
 
     # Slett nåværende innhold i rammen
     def clear_frame():
@@ -72,6 +82,8 @@ def main_window():
     # Menyvalg for "Kabeldimensjonering" og "CC-avstand"
     funksjoner_menu.add_command(label="Kabeldimensjonering", command=vis_kabeldimensjonering)
     funksjoner_menu.add_command(label="CC-avstand for varmekabel", command=vis_cc_avstand)
+    funksjoner_menu.add_command(label="Beregning av motstander", command=vis_resistans)
+    funksjoner_menu.add_command(label="Ohms Lov", command=vis_ohmslov)
 
     # Ramme for å vise forskjellige funksjoner i hovedvinduet
     global frame
